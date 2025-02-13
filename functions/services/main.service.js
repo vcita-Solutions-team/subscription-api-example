@@ -14,74 +14,91 @@
 /* eslint-disable max-len */
 /* eslint-disable require-jsdoc */
 
-const { authenticateToken } = require('./authentication.service');
-const { getContactAPI, getActivity } = require('./hubspot.service');
-const { getEmailFromVcita } = require('./vcita.service');
+const { createBusiness, createNewSubscription, cancelSubscription, getAllSubscriptions } = require('./model.service');
 
-async function incomingRequest(req, res) {
-  const authenticated = await authenticateToken(req.headers);
-  if (!authenticated.status) {
-    console.log(`${authenticated.message}, token: ${req.headers.authorization}`);
-    return res.status(401).send(authenticated.message);
+async function incomingCreation(req, res) {
+  const { businessData, package } = req.body;
+  // Create Business with incoming data
+  const businessCreated = await createBusiness(businessData);
+  if (!businessCreated.success) {
+    return res
+      .send({ success: false, message: `Failed to create Business. Error: ${businessCreated.error}` })
+      .status(400);
   }
-  let { email, business_id } = req.query;
-  if (!email) {
-    email = await getEmailFromVcita(business_id, authenticated.token);
+  // Create a Subscription for created Business
+  const subscriptionCreated = await createNewSubscription(businessCreated.businessId, package);
+  if (!subscriptionCreated.success) {
+    return res
+      .send(
+        `Failed to create Subscription for business ${businessCreated.businessId}. Error: ${subscriptionCreated.error}`
+      )
+      .status(400);
   }
-  const { activities, properties } = req.body;
-  console.log(email);
-  console.log(activities);
-  console.log(properties);
-  const requestedData = await constructData(authenticated.directory, email, properties, activities);
-  if (!requestedData) {
-    console.log(`${requestedData.message}, email: ${email}`);
-    return res.status(400).send(requestedData.message);
-  }
-  res.status(200).send(requestedData);
+  // Return Business and subscription info
+  return res.send({
+    success: true,
+    business_id: businessCreated.businessId,
+    subscription_id: subscriptionCreated.subscription_id,
+  });
 }
 
-async function constructData(directory, email, properties, activities) {
-  const contactData = await getContact(email, properties, directory);
-  if (!contactData) {
-    return {
-      status: false,
-      message: `Contact ${email} not found within Business unit`,
-    };
+async function incomingChangePackage(req, res) {
+  const { business_id, package } = req.body;
+  // Change subscription based off of incoming data
+  const subscriptionChanged = await createNewSubscription(business_id, package);
+  if (!subscriptionChanged.success) {
+    return res
+      .send({
+        success: false,
+        message: `Failed to Change Subscription for business ${business_id}. Error: ${subscriptionChanged.error}`,
+      })
+      .status(400);
   }
-  const activityData = await getActivityData(contactData.id, activities);
-  return { contactData, activityData };
+  // Return new subscription details
+  return res.send({
+    success: true,
+    subscription_id: subscriptionChanged.subscription_id,
+  });
 }
 
-async function getContact(email, properties, directory) {
-  const business_unit = JSON.parse(process.env.BUSINESSUNITS)[directory];
-  properties.push('hs_all_assigned_business_unit_ids');
-  const contactData = await getContactAPI(email, properties);
-  if (!contactData) return false;
-  else if (contactData.properties.hs_all_assigned_business_unit_ids != business_unit) return false;
-  return contactData;
+async function incomingCancellation(req, res) {
+  const { business_id, subscription_id } = req.body;
+  const subscriptionCancelled = await cancelSubscription(business_id, subscription_id);
+  if (!subscriptionCancelled.success) {
+    return res
+      .send({
+        success: false,
+        message: `Failed to cancel subscription for subscription ${subscription_id}. Error: ${subscriptionCancelled.error}`,
+      })
+      .status(400);
+  }
+  return res.send({
+    success: true,
+  });
 }
 
-async function getActivityData(hubspotId, activities) {
-  const activityData = {
-    activitySum: {},
-  };
-  for (let i = 0; i < activities.length; i++) {
-    const activity = await getActivity(hubspotId, activities[i]);
-    if (!activity) continue;
-    console.log(activity);
-    activityData[activities[i]] = activity;
-    const length = activity.length;
-    console.log(length);
-    console.log(activity[0]);
-    activityData.activitySum[activities[i]] = {
-      count: length,
-      latestActivity: activity[0],
-    };
+async function incomingGetAllSubscriptions(req, res) {
+  const { offering_uid, business_id } = req.query;
+  console.log(business_id);
+
+  const allSubscriptions = await getAllSubscriptions(offering_uid, business_id);
+  if (!allSubscriptions.success) {
+    return res.send({
+      success: false,
+      message: `Failed to get subscriptions for offering ${offering_uid}. Error: ${allSubscriptions.error}`,
+    });
   }
-  console.log(activityData);
-  return activityData;
+  return res.send({
+    success: true,
+    subscriptions: allSubscriptions.subscriptions,
+  });
 }
+
+//
 
 module.exports = {
-  incomingRequest,
+  incomingCreation,
+  incomingChangePackage,
+  incomingCancellation,
+  incomingGetAllSubscriptions,
 };

@@ -1,0 +1,139 @@
+{
+	"info": {
+		"_postman_id": "0284e031-73ce-4362-bc78-eb69dfeeb3a8",
+		"name": "Code Example APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19091098"
+	},
+	"item": [
+		{
+			"name": "Create Account and Subscription",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"businessData\": {\n        \"email\": {{account_email}},\n        \"name\": {{business_name}}\n    },\n    \"package\": {{offering_uid}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3033/api/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3033",
+					"path": [
+						"api",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Change package",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"business_id\": {{buisness_id}},\n    \"package\": {{offering_uid}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3033/api/update",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3033",
+					"path": [
+						"api",
+						"update"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Expire subscription",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"business_id\": {{business_id}},\n    \"subscription_id\": {{offering_id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3033/api/cancel",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3033",
+					"path": [
+						"api",
+						"cancel"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Subscriptions",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3033/api/listAll?offering_uid={{offering_id}}&business_id={{business_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3033",
+					"path": [
+						"api",
+						"listAll"
+					],
+					"query": [
+						{
+							"key": "offering_uid",
+							"value": "{{offering_id}}"
+						},
+						{
+							"key": "business_id",
+							"value": "{{business_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
